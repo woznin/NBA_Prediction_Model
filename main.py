@@ -1,35 +1,28 @@
 import pandas as pd
-import Player_stats
+import NBA_API_connection
 import Prediction
-
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-
-player = 'Devin Booker'
-matchup = 'PHX vs. CLE'
-
-player_id = Player_stats.find_player_id(player)
-seasons = []
-
-for i in range(18, 24):
-    seasons.append(f'20{i}-{i+1}')
+import Feature_optimalization
 
 
-seasons_dataframes = []
-for season in seasons:
-    reg_season_data_singular = Player_stats.get_reg_seas_data(season, player_id)
-    po_season_data_singular = Player_stats.get_po_data(season, player_id)
-    seasons_dataframes.append(reg_season_data_singular)
-    seasons_dataframes.append(po_season_data_singular)
+player = 'Luka Doncic'
+matchup = 'DAL vs. OKC'
 
+player_id = NBA_API_connection.find_player_id(player)
 
-seasons_all_data = pd.concat(seasons_dataframes, ignore_index=True)
-print(seasons_all_data)
-seasons_wl_data_x = seasons_all_data.drop(['WL', 'GAME_DATE', 'MATCHUP'], axis=1)
-seasons_wl_data_y = seasons_all_data['WL']
-seasons_stats_data_y = seasons_all_data.drop(['WL', 'GAME_DATE', 'MATCHUP'], axis=1)
-seasons_stats_data_x = seasons_all_data['MATCHUP']
-stats_prediction = Prediction.stats_model_process(seasons_stats_data_x, seasons_stats_data_y, matchup)
-stats_prediction = pd.DataFrame(stats_prediction.reshape(1, -1), columns=['REB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS', 'PLUS_MINUS'])
+games_df = NBA_API_connection.get_all_data(number_of_seasons=6, player=player_id)
+valid_columns = Feature_optimalization.optimize_features(games_df)
+games_df = games_df[valid_columns]
+
+wl_data = games_df.drop(['WL', 'GAME_DATE', 'MATCHUP'], axis=1)
+wl_target = games_df['WL']
+
+stats_target = games_df.drop(['WL', 'GAME_DATE', 'MATCHUP'], axis=1)
+stats_data = games_df['MATCHUP']
+
+stats_prediction = Prediction.performance_prediction(stats_data, stats_target, matchup)
+stats_prediction = pd.DataFrame(stats_prediction.reshape(1, -1), columns=wl_data.columns)
+wl_prediction = Prediction.wl_prediction(wl_data, wl_target, stats_prediction, True)
+
 print(f'Predicted stats:\n{stats_prediction}')
-Prediction.wl_model_process(seasons_wl_data_x, seasons_wl_data_y, stats_prediction)
+print(f'Predicted outcome: {wl_prediction}')
+
