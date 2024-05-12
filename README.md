@@ -12,8 +12,8 @@ The final version focuses on utilizing two machine learning models which hopeful
 ## Setup
 Before running the program make sure to change two variables below (found in main.py) to your desired player and matchup.
 ```python
-player = 'Luka Doncic'
-matchup = 'DAL vs. OKC'
+player = ''
+matchup = ''
 ```
 
 
